@@ -16,18 +16,16 @@ namespace Diary_Server.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<DiaryDto>> GetEntries()
+        public ActionResult<IEnumerable<DiaryDto>> GetDiarys()
         {
-            var userId = User.Identity.Name; // Assuming user identity is set
-            var entries = _diaryService.GetEntries(userId);
-            return Ok(entries);
+
+            return Ok(_diaryService.GetDiarys());
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<DiaryDto> GetEntry(int id)
+        [HttpGet("{userId}")]
+        public ActionResult<DiaryDto> GetUserDiarys(long userId)
         {
-            var userId = User.Identity.Name; // Assuming user identity is set
-            var entry = _diaryService.GetEntry(id, userId);
+            var entry = _diaryService.GetUserDiarys(userId);
             if (entry == null)
                 return NotFound();
             return Ok(entry);
@@ -36,16 +34,14 @@ namespace Diary_Server.Controllers
         [HttpPost]
         public ActionResult<DiaryDto> CreateEntry([FromBody] CreateDiaryDto entryDto)
         {
-            var userId = User.Identity.Name; // Assuming user identity is set
-            var entry = _diaryService.CreateEntry(userId, entryDto);
-            return CreatedAtAction(nameof(GetEntry), new { id = entry.Id }, entry);
+            var entry = _diaryService.CreateEntry( entryDto);
+            return Ok(entry);
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult DeleteEntry(int id)
+        [HttpDelete("{userId}")]
+        public IActionResult DeleteEntry(long userId)
         {
-            var userId = User.Identity.Name; // Assuming user identity is set
-            _diaryService.DeleteEntry(id, userId);
+            _diaryService.DeleteEntry(userId);
             return NoContent();
         }
     }

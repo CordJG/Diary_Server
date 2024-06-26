@@ -7,10 +7,10 @@ namespace Diary_Server.Services
 {
     public interface IDiaryService
     {
-        IEnumerable<DiaryDto> GetEntries(string userId);
-        DiaryDto GetEntry(int id, string userId);
-        DiaryDto CreateEntry(string userId, CreateDiaryDto entry);
-        void DeleteEntry(int id, string userId);
+        IEnumerable<DiaryDto> GetDiarys();
+        IEnumerable<DiaryDto> GetUserDiarys(long userId);
+        DiaryDto CreateEntry(CreateDiaryDto entry);
+        void DeleteEntry(long userId);
     }
 
     public class DiaryService : IDiaryService
@@ -22,12 +22,13 @@ namespace Diary_Server.Services
             _context = context;
         }
 
-        public IEnumerable<DiaryDto> GetEntries(string userId)
+        public IEnumerable<DiaryDto> GetDiarys()
         {
-            var user = _context.Users.Include(u => u.Diaries).FirstOrDefault(u => u.Id == userId);
-            if (user == null) return Enumerable.Empty<DiaryDto>();
+            var diaries = _context.Diaries
+                .Include(d => d.User)
+                .ToList();
 
-            return user.Diaries.Select(e => new DiaryDto
+            return diaries.Select(e => new DiaryDto
             {
                 Id = e.Id,
                 Date = e.Date,
@@ -36,30 +37,31 @@ namespace Diary_Server.Services
             }).ToList();
         }
 
-        public DiaryDto GetEntry(int id, string userId)
+
+        public IEnumerable<DiaryDto> GetUserDiarys(long userId)
         {
-            var entry = _context.Diaries.Include(d => d.User)
-                .FirstOrDefault(e => e.Id == id && (e.UserId == userId || !e.IsPrivate));
+            var diarys = _context.Diaries
+                .Include(d => d.User)
+                .Where(d => d.UserId == userId || !d.IsPrivate)
+                .ToList();
 
-            if (entry == null) return null;
-
-            return new DiaryDto
+            return diarys.Select(d => new DiaryDto
             {
-                Id = entry.Id,
-                Date = entry.Date,
-                Content = entry.Content,
-                IsPrivate = entry.IsPrivate
-            };
+                Id = d.Id,
+                Date = d.Date,
+                Content = d.Content,
+                IsPrivate = d.IsPrivate
+            }).ToList();
         }
 
-        public DiaryDto CreateEntry(string userId, CreateDiaryDto entryDto)
+        public DiaryDto CreateEntry(CreateDiaryDto entryDto)
         {
+            var userId = entryDto.UserId;
             var user = _context.Users.FirstOrDefault(u => u.Id == userId);
             if (user == null) return null;
 
             var newEntry = new Diary
             {
-                Id = user.Diaries.Count + 1,
                 UserId = userId,
                 User = user,
                 Date = entryDto.Date,
@@ -67,6 +69,9 @@ namespace Diary_Server.Services
                 IsPrivate = entryDto.IsPrivate
             };
             user.Diaries.Add(newEntry);
+
+            _context.Diaries.Add(newEntry);
+            _context.SaveChanges();
 
             return new DiaryDto
             {
@@ -77,9 +82,9 @@ namespace Diary_Server.Services
             };
         }
 
-        public void DeleteEntry(int id, string userId)
+        public void DeleteEntry(long diaryId)
         {
-            var entry = _context.Diaries.FirstOrDefault(e => e.Id == id && e.UserId == userId);
+            var entry = _context.Diaries.FirstOrDefault(e => e.Id == diaryId);
             if (entry != null)
             {
                 _context.Diaries.Remove(entry);

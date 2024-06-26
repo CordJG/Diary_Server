@@ -2,7 +2,7 @@
 {
     public class DiaryDto
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public DateTime Date { get; set; }
         public string Content { get; set; }
         public bool IsPrivate { get; set; }

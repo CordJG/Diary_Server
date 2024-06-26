@@ -1,6 +1,8 @@
 ﻿using Diary_Server.Contexts;
 using Diary_Server.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 namespace Diary_Server
 {
@@ -15,7 +17,15 @@ namespace Diary_Server
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddRazorPages();
+
+       
             services.AddControllersWithViews();
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Diary API", Version = "v1" });
+            });
 
             // Add DbContext with PostgreSQL
             services.AddDbContext<DiaryContext>(options =>
@@ -31,6 +41,11 @@ namespace Diary_Server
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Diary API V1");
+                });
             }
             else
             {
@@ -45,11 +60,16 @@ namespace Diary_Server
 
             app.UseAuthorization();
 
+            using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
+            {
+                var context = serviceScope.ServiceProvider.GetService<DiaryContext>();
+                context.Database.Migrate();
+            }
+
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
+                endpoints.MapControllers();
             });
         }
     }

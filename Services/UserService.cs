@@ -8,7 +8,7 @@ namespace Diary_Server.Services
     {
         UserDto Register(RegisterUserDto registerDto);
         UserDto Authenticate(LoginUserDto loginDto);
-        UserDto GetUserById(string id);
+        UserDto GetUserById(long id);
     }
 
     public class UserService : IUserService
@@ -25,7 +25,7 @@ namespace Diary_Server.Services
         {
             var newUser = new User
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = registerDto.Id,
                 Username = registerDto.Username,
                 Password = registerDto.Password, // Note: Store hashed passwords in production
                 Email = registerDto.Email,
@@ -59,7 +59,7 @@ namespace Diary_Server.Services
             };
         }
 
-        public UserDto GetUserById(string id)
+        public UserDto GetUserById(long id)
         {
             var user = _context.Users.FirstOrDefault(u => u.Id == id);
             if (user == null) return null;

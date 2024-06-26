@@ -1,13 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diary_Server.Models
 {
     [Table("Diary")]
     public class Diary
     {
-        public int Id { get; set; }
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
         public User User { get; set; }
-        public string UserId { get; set; } // User identification
+        public long UserId { get; set; } // User identification
 
         public DateTime Date { get; set; }
         public string Content { get; set; }

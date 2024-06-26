@@ -19,7 +19,7 @@ namespace Diary_Server.Controllers
         public ActionResult<UserDto> Register([FromBody] RegisterUserDto registerDto)
         {
             var user = _userService.Register(registerDto);
-            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+            return Ok(user);
         }
 
         [HttpPost("login")]
@@ -31,10 +31,10 @@ namespace Diary_Server.Controllers
             return Ok(user);
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<UserDto> GetUserById(string id)
+        [HttpGet("{userId}")]
+        public ActionResult<UserDto> GetUserById(long userId)
         {
-            var user = _userService.GetUserById(id);
+            var user = _userService.GetUserById(userId);
             if (user == null)
                 return NotFound();
             return Ok(user);
