@@ -34,11 +34,21 @@ namespace Diary_Server.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("Date")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DiaryDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsPrivate")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("UserId")
                         .HasColumnType("bigint");
@@ -68,6 +78,9 @@ namespace Diary_Server.Migrations
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Username")
                         .HasColumnType("text");

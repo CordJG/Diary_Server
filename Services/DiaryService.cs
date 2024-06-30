@@ -1,95 +1,86 @@
-﻿using Diary_Server.Contexts;
+﻿using AutoMapper;
 using Diary_Server.Dtos.Diarys;
+using Diary_Server.Interface;
 using Diary_Server.Models;
-using Microsoft.EntityFrameworkCore;
+
 
 namespace Diary_Server.Services
 {
-    public interface IDiaryService
-    {
-        IEnumerable<DiaryDto> GetDiarys();
-        IEnumerable<DiaryDto> GetUserDiarys(long userId);
-        DiaryDto CreateEntry(CreateDiaryDto entry);
-        void DeleteEntry(long userId);
-    }
-
     public class DiaryService : IDiaryService
     {
-        private readonly DiaryContext _context;
+        private readonly IDiaryContextHandler _diaryContextHandler;
+        private readonly IUserContextHandler _userContextHandler;
+        private readonly IMapper _mapper;
 
-        public DiaryService(DiaryContext context)
+        public DiaryService(IDiaryContextHandler diaryContextHandler, IUserContextHandler userContextHandler, IMapper mapper)
         {
-            _context = context;
+            _diaryContextHandler = diaryContextHandler;
+            _userContextHandler = userContextHandler;
+            _mapper = mapper;
         }
 
-        public IEnumerable<DiaryDto> GetDiarys()
+        public IEnumerable<DiaryDto> GetAllDiarys()
         {
-            var diaries = _context.Diaries
-                .Include(d => d.User)
-                .ToList();
-
-            return diaries.Select(e => new DiaryDto
-            {
-                Id = e.Id,
-                Date = e.Date,
-                Content = e.Content,
-                IsPrivate = e.IsPrivate
-            }).ToList();
+            var diarys = _diaryContextHandler.GetAll();
+            return _mapper.Map<List<DiaryDto>>(diarys);
         }
 
 
-        public IEnumerable<DiaryDto> GetUserDiarys(long userId)
+        public IEnumerable<DiaryDto> GetUserDiarys(long userId, long loginUserId)
         {
-            var diarys = _context.Diaries
-                .Include(d => d.User)
-                .Where(d => d.UserId == userId || !d.IsPrivate)
-                .ToList();
-
-            return diarys.Select(d => new DiaryDto
-            {
-                Id = d.Id,
-                Date = d.Date,
-                Content = d.Content,
-                IsPrivate = d.IsPrivate
-            }).ToList();
+            var diaries = _diaryContextHandler.GetUserDiaries(userId, loginUserId);
+            return _mapper.Map<List<DiaryDto>>(diaries);
         }
 
         public DiaryDto CreateEntry(CreateDiaryDto entryDto)
         {
-            var userId = entryDto.UserId;
-            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            var user = _userContextHandler.GetById(entryDto.UserId);
             if (user == null) return null;
 
-            var newEntry = new Diary
-            {
-                UserId = userId,
-                User = user,
-                Date = entryDto.Date,
-                Content = entryDto.Content,
-                IsPrivate = entryDto.IsPrivate
-            };
+
+            var newEntry = _mapper.Map<Diary>(entryDto);
+
+            newEntry.User = user;
+            newEntry.CreatedAt = DateTime.UtcNow;
+            newEntry.UpdatedAt = DateTime.UtcNow;
+
             user.Diaries.Add(newEntry);
 
-            _context.Diaries.Add(newEntry);
-            _context.SaveChanges();
+            _diaryContextHandler.Add(newEntry);
 
-            return new DiaryDto
-            {
-                Id = newEntry.Id,
-                Date = newEntry.Date,
-                Content = newEntry.Content,
-                IsPrivate = newEntry.IsPrivate
-            };
+            return _mapper.Map<DiaryDto>(newEntry);
         }
 
-        public void DeleteEntry(long diaryId)
+        public void UpdateEntry(long diaryId, UpdateDiaryDto updateDto, long loginUserId)
         {
-            var entry = _context.Diaries.FirstOrDefault(e => e.Id == diaryId);
-            if (entry != null)
+            var diary = _diaryContextHandler.GetById(diaryId);
+            if (diary == null)
             {
-                _context.Diaries.Remove(entry);
-                _context.SaveChanges();
+                throw new KeyNotFoundException("Diary entry not found");
             }
+            if (diary.UserId != loginUserId)
+            {
+                throw new UnauthorizedAccessException("You do not have permission to update this diary entry");
+            }
+
+            _mapper.Map(updateDto, diary);
+            diary.UpdatedAt = DateTime.UtcNow;
+            _diaryContextHandler.Update(diary);
+        }
+
+        public void DeleteEntry(long diaryId, long loginUserId)
+        {
+            var diary = _diaryContextHandler.GetById(diaryId);
+            if (diary == null)
+            {
+                throw new KeyNotFoundException("Diary entry not found");
+            }
+            if (diary.UserId != loginUserId)
+            {
+                throw new UnauthorizedAccessException("You do not have permission to delete this diary entry");
+            }
+
+            _diaryContextHandler.Delete(diary);
         }
     }
 }

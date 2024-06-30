@@ -12,9 +12,14 @@ namespace Diary_Server.Models
         public User User { get; set; }
         public long UserId { get; set; } // User identification
 
-        public DateTime Date { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public DateTime DiaryDate { get; set; }
+
+        public string Title { get; set; }
         public string Content { get; set; }
         public bool IsPrivate { get; set; }
 
+       
     }
 }

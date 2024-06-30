@@ -1,76 +1,55 @@
-﻿using Diary_Server.Contexts;
+﻿using AutoMapper;
 using Diary_Server.Dtos.Users;
+using Diary_Server.Interface;
 using Diary_Server.Models;
 
 namespace Diary_Server.Services
 {
-    public interface IUserService
-    {
-        UserDto Register(RegisterUserDto registerDto);
-        UserDto Authenticate(LoginUserDto loginDto);
-        UserDto GetUserById(long id);
-    }
-
     public class UserService : IUserService
     {
-
-        private readonly DiaryContext _context;
-
-        public UserService(DiaryContext context)
+        private readonly IUserContextHandler _userContextHandler;
+        private readonly IMapper _mapper;
+        private readonly IJwtHelper _jwtHelper;
+        
+        public UserService(IUserContextHandler userContextHandler, IMapper mapper, IJwtHelper jwtHelper)
         {
-            _context = context;
+            _userContextHandler = userContextHandler;
+            _mapper = mapper;
+            _jwtHelper = jwtHelper;
         }
 
         public UserDto Register(RegisterUserDto registerDto)
         {
-            var newUser = new User
-            {
-                Id = registerDto.Id,
-                Username = registerDto.Username,
-                Password = registerDto.Password, // Note: Store hashed passwords in production
-                Email = registerDto.Email,
-                CreatedAt = DateTime.UtcNow
-            };
-            
-            _context.Users.Add(newUser);
-            _context.SaveChanges();
+            var newUser = _mapper.Map<User>(registerDto);
+            newUser.CreatedAt = DateTime.UtcNow;
+            newUser.UpdatedAt = DateTime.UtcNow;
 
-            return new UserDto
-            {
-                Id = newUser.Id,
-                Username = newUser.Username,
-                Email = newUser.Email,
-                CreatedAt = newUser.CreatedAt
-            };
+            _userContextHandler.Add(newUser);
+
+            return _mapper.Map<UserDto>(newUser);
         }
 
-        public UserDto Authenticate(LoginUserDto loginDto)
+        public string Authenticate(LoginUserDto loginDto, out UserDto userDto)
         {
-            var user = _context.Users
-                 .FirstOrDefault(u => u.Username == loginDto.Username && u.Password == loginDto.Password);
-            if (user == null) return null;
-
-            return new UserDto
+            var user = _userContextHandler.GetAll()
+                .FirstOrDefault(u => u.Email == loginDto.Email && u.Password == loginDto.Password); // Note: Store hashed passwords in production
+            if (user == null)
             {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                CreatedAt = user.CreatedAt
-            };
+                userDto = null;
+                return null;
+            }
+
+            var token = _jwtHelper.GenerateToken(user.Id, user.Email);
+            userDto = _mapper.Map<UserDto>(user);
+            return token;
         }
 
         public UserDto GetUserById(long id)
         {
-            var user = _context.Users.FirstOrDefault(u => u.Id == id);
+            var user = _userContextHandler.GetById(id);
             if (user == null) return null;
 
-            return new UserDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                CreatedAt = user.CreatedAt
-            };
+            return _mapper.Map<UserDto>(user);
         }
     }
 }
