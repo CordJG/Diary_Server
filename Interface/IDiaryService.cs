@@ -5,6 +5,8 @@ namespace Diary_Server.Interface
     public interface IDiaryService
     {
         IEnumerable<DiaryDto> GetAllDiarys();
+
+        DiaryDto GetDiary(long id);
         IEnumerable<DiaryDto> GetUserDiarys(long userId, long loginUserId);
         DiaryDto CreateEntry(CreateDiaryDto entry);
 

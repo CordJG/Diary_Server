@@ -25,6 +25,11 @@ namespace Diary_Server.Services
             return _mapper.Map<List<DiaryDto>>(diarys);
         }
 
+        public DiaryDto GetDiary(long id)
+        {
+            var diary = _diaryContextHandler.GetById(id);
+            return _mapper.Map<DiaryDto>(diary);
+        }
 
         public IEnumerable<DiaryDto> GetUserDiarys(long userId, long loginUserId)
         {

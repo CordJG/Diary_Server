@@ -25,6 +25,13 @@ namespace Diary_Server.Controllers
             return Ok(diaries);
         }
 
+        [HttpGet("{id}")]
+        public ActionResult<DiaryDto> GetDiary(long id)
+        {
+            var diary = _diaryService.GetDiary(id);
+            return Ok(diary);
+        }
+
         [HttpGet("user/{userId}")]
         public ActionResult<IEnumerable<DiaryDto>> GetUserDiaries(long userId)
         {
